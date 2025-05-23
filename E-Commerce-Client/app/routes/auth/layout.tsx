@@ -7,11 +7,7 @@ export default function AuthLayout() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link to="/" className="flex justify-center">
           <span className="sr-only">ModernWear</span>
-          <img
-            className="h-12 w-auto"
-            src="/logo.svg"
-            alt="ModernWear"
-          />
+          <div className="h-12 w-auto text-xl font-bold">ModernWear</div>
         </Link>
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
           Your Account

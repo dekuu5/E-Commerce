@@ -1,26 +1,38 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router";
+import { useAuth } from "../../context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, error: authError, clearError, isAuthenticated, loading } = useAuth();
+
+  // If user is already authenticated, redirect to home or the page they were trying to access
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || "/";
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location.state]);
+
+  // Clear any previous auth errors when component mounts
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // This would handle login in a real app
-    console.log("Login attempt:", { email, password, rememberMe });
-    
-    // Simulating authentication error
-    if (email !== "user@example.com" || password !== "password") {
-      setError("Invalid email or password");
-      return;
+    try {
+      await login(email, password);
+      // No need to navigate here, the useEffect will handle it
+    } catch (err) {
+      // Error is handled by the auth context
+      console.error("Login failed:", err);
     }
-    
-    // Redirect to home on successful login
-    window.location.href = "/";
   };
   
   return (
@@ -29,7 +41,7 @@ export default function LoginPage() {
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Sign in to your account</h2>
       </div>
 
-      {error && (
+      {authError && (
         <div className="mt-4 rounded-md bg-red-50 p-4 dark:bg-red-900/30">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -38,7 +50,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{error}</h3>
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{authError}</h3>
             </div>
           </div>
         </div>
@@ -60,6 +72,7 @@ export default function LoginPage() {
                 className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
@@ -78,6 +91,7 @@ export default function LoginPage() {
                 className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-black focus:outline-none focus:ring-black sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
@@ -91,6 +105,7 @@ export default function LoginPage() {
                 className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black dark:border-gray-600 dark:bg-gray-700"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={loading}
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
                 Remember me
@@ -98,18 +113,29 @@ export default function LoginPage() {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-black hover:text-gray-800 dark:text-white dark:hover:text-gray-300">
+              <Link to="/auth/forgot-password" className="font-medium text-black hover:text-gray-800 dark:text-white dark:hover:text-gray-300">
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           </div>
 
           <div>
             <button
               type="submit"
-              className="flex w-full justify-center rounded-md border border-transparent bg-black py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-gray-300"
+              disabled={loading}
+              className="flex w-full justify-center rounded-md border border-transparent bg-black py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:bg-white dark:text-black dark:hover:bg-gray-300 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Sign in
+              {loading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white dark:text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </span>
+              ) : (
+                "Sign in"
+              )}
             </button>
           </div>
         </form>
